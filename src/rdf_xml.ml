@@ -443,18 +443,28 @@ let output g =
     in
     E ((("",Rdf_iri.string pred_iri),atts),children)
   in
-  let f_triple acc (sub, pred, obj) =
-    let atts =
-      match sub with
-        Iri iri -> [("", Rdf_iri.string Rdf_rdf.rdf_about), Rdf_iri.string iri]
-      | Blank_ id -> [("", Rdf_iri.string Rdf_rdf.rdf_nodeID), Rdf_term.string_of_blank_id id]
-      | Blank -> assert false
-      | Literal _ -> assert false
+  let seen_subjects = Hashtbl.create 42 in
+  let f_triple (sub, pred, obj) =
+    let (tag, atts, children) =
+      try Hashtbl.find seen_subjects sub
+      with Not_found ->
+        let about_att =
+          match sub with
+            Iri iri -> ("", Rdf_iri.string Rdf_rdf.rdf_about), Rdf_iri.string iri
+         | Blank_ id -> ("", Rdf_iri.string Rdf_rdf.rdf_nodeID), Rdf_term.string_of_blank_id id
+         | Blank -> assert false
+         | Literal _ -> assert false
+        in
+        (("",Rdf_iri.string Rdf_rdf.rdf_Description), [about_att], [])
     in
-    let xml_prop = xml_prop pred obj in
-    (E ((("",Rdf_iri.string Rdf_rdf.rdf_Description), atts), [xml_prop]) :: acc)
+    Hashtbl.replace seen_subjects sub (tag, atts, (xml_prop pred obj) :: children)
   in
-  let xmls = List.fold_left f_triple [] (g.find ()) in
+  List.iter f_triple (g.find ());
+  let xmls = Hashtbl.fold
+    (fun _ (tag, atts, children) acc -> E ((tag, atts), children) :: acc)
+    seen_subjects
+    []
+  in
   E ((("", Rdf_iri.string Rdf_rdf.rdf_RDF),[]), xmls)
 
 
