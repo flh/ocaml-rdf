@@ -457,7 +457,21 @@ let output g =
         in
         (("",Rdf_iri.string Rdf_rdf.rdf_Description), [about_att], [])
     in
-    Hashtbl.replace seen_subjects sub (tag, atts, (xml_prop pred obj) :: children)
+    (* We usually build a child XML element whose tag is build from
+     * [pred]. As a special case, when [pred] is [rdf:type], we replace
+     * the subject's generic [<rdf:Description>] tag with [pred]. This
+     * can be done only once, further [rdf:type] predicates remain as
+     * child tags in the XML tree. *)
+    if Rdf_iri.equal pred Rdf_rdf.rdf_type &&
+       tag = ("", Rdf_iri.string Rdf_rdf.rdf_Description)
+
+    then Hashtbl.replace seen_subjects sub (("",
+      (match obj with
+        Iri iri -> Rdf_iri.string iri
+      | _ -> assert false)), atts, children)
+
+    else Hashtbl.replace seen_subjects sub (tag, atts, (xml_prop pred obj) :: children)
+
   in
   List.iter f_triple (g.find ());
   let xmls = Hashtbl.fold
