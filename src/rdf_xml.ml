@@ -55,7 +55,7 @@ let out_tree o t =
 
 let apply_namespaces = Rdf_dot.apply_namespaces;;
 
-let output_doc_tree ns ?(decl=true) dest tree =
+let output_doc_tree ns ?(decl=true) ?indent dest tree =
   let map (pref, s) =
     match pref with
       "" -> apply_namespaces ns s
@@ -76,7 +76,7 @@ let output_doc_tree ns ?(decl=true) dest tree =
         E ((tag, ns_atts @ atts), subs)
   in
   let ns_prefix s = Some s in
-  let output = Xmlm.make_output ~ns_prefix ~decl dest in
+  let output = Xmlm.make_output ?indent ~ns_prefix ~decl dest in
   let frag = function
   | D d -> `Data d
   | E (((pref,s),atts), childs) ->
@@ -482,11 +482,11 @@ let output g =
   E ((("", Rdf_iri.string Rdf_rdf.rdf_RDF),[]), xmls)
 
 
-let to_ ?namespaces g dest =
+let to_ ?namespaces ?indent g dest =
   let namespaces = Rdf_dot.build_namespaces ?namespaces g in
   try
     let tree = output g in
-    output_doc_tree namespaces ~decl: true dest tree
+    output_doc_tree namespaces ~decl:true ?indent dest tree
   with
     Xmlm.Error ((line, col), error) ->
       let msg = Printf.sprintf "Line %d, column %d: %s"
@@ -495,17 +495,17 @@ let to_ ?namespaces g dest =
       failwith msg
 ;;
 
-let to_string ?namespaces g =
+let to_string ?namespaces ?indent g =
   let buf = Buffer.create 256 in
   let dest = `Buffer buf in
-  to_ ?namespaces g dest;
+  to_ ?namespaces ?indent g dest;
   Buffer.contents buf
 ;;
 
-let to_file ?namespaces g file =
+let to_file ?namespaces ?indent g file =
   let oc = open_out file in
   try
-    to_ ?namespaces g (`Channel oc);
+    to_ ?namespaces ?indent g (`Channel oc);
     close_out oc
   with e ->
       close_out oc ; raise e

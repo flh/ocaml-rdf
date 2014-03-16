@@ -63,8 +63,8 @@ val from_string : Rdf_graph.graph -> ?base: Rdf_iri.iri -> string -> unit
 val from_file : Rdf_graph.graph -> ?base: Rdf_iri.iri -> string -> unit
 
 val to_string :
-  ?namespaces: (Rdf_iri.iri * string) list -> Rdf_graph.graph -> string
+  ?namespaces: (Rdf_iri.iri * string) list -> ?indent: int option -> Rdf_graph.graph -> string
 
 val to_file :
-  ?namespaces: (Rdf_iri.iri * string) list ->
+  ?namespaces: (Rdf_iri.iri * string) list -> ?indent: int option ->
     Rdf_graph.graph -> string -> unit
